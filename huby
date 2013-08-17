@@ -1,0 +1,68 @@
+#!/usr/bin/ruby
+verbose = ARGV.include?("-v")
+
+header = File.open("huby-meat/header.huby") {|head| head.read()}
+footer = File.open("huby-meat/footer.huby") {|foot| foot.read()}
+navbar = File.open("huby-meat/navbar.huby") {|nav| nav.read()}
+
+links = {"index" => "index.html", 
+		 "index_button" => "btn",
+		 "about" => "about.html",
+		 "about_button" => "btn",
+		 "contact" => "contact.php",
+		 "contact_button" => "btn",
+		 "projects" => "projects.html",
+		 "projects_button" => "btn",
+		 "projects/palsulich" => "projects/palsulich.html",
+		 "projects/palsulich_button" => "",
+		 "carousel" => "assets/css/carousel.css",
+		 "custom" => "assets/css/custom.css",
+		 "bootstrap" => "assets/css/bootstrap.css",
+		 "bootstrap.js" => "assets/js/bootstrap.js",
+		 "jquery.js" => "assets/js/jquery-2.0.3.js",
+		 "navbar" => navbar}
+
+pattern = File.join("**", "huby-meat/bodies", "**", "*.huby")
+bodies = Dir.glob(pattern)
+
+bodies.each do |file| 
+	links_key = ""
+	old_link = ""
+	filename = ""
+	folder_adjustment = ""
+	filename = file[file.index("huby-meat") + "huby-meat".length + 1 .. file.index(".huby") - 1]
+	links_key = filename[0..filename.index(".") - 1]
+	old_link = links[links_key]
+	folder_adjustment = "../" * links_key.scan("\/").size
+	links[links_key] = "#"
+	if links.has_key?(links_key + "_button") then 
+		links[links_key + "_button"] += " active"
+	end
+	filename = Dir.getwd + "/public/" + filename
+	if(verbose)
+		puts "filename: " + filename
+		puts "links_key: " + links_key
+		puts "old_link: " + old_link
+	end
+	template = File.open(file) {|f| f.read()}
+	new_header = String.new(header)
+	new_footer = String.new(footer)
+	links.each {|key, value| 
+		if verbose then puts key + " => " + value end
+		value = folder_adjustment + value unless key.include?("button") or value == "#"
+		new_header.gsub!("{{{" + key + "}}}", value)
+		template.gsub!("{{{" + key + "}}}", value)
+		new_footer.gsub!("{{{" + key + "}}}", value)
+		}
+	output_file = File.open(filename, 'w') {|output|
+		output.puts(new_header)
+		output.puts(template)
+		output.puts(new_footer)
+	}
+	links[links_key] = old_link
+	if links_key.include?("/") and links.has_key?(links_key + "_button")
+		links[links_key + "_button"] = ""
+	elsif links.has_key?(links_key + "_button") 
+		links[links_key + "_button"] = "btn"
+	end
+end
