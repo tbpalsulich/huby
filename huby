@@ -1,4 +1,5 @@
 #!/usr/bin/ruby
+require 'fileutils'
 verbose = ARGV.include?("-v")
 
 header = File.open("huby-meat/header.huby") {|head| head.read()}
@@ -57,6 +58,7 @@ bodies.each do |file|
 		template.gsub!("{{{" + key + "}}}", value)
 		new_footer.gsub!("{{{" + key + "}}}", value)
 		}
+	FileUtils.mkdir_p(filename[0..filename.rindex("/")]) unless File.exists?(filename)
 	output_file = File.open(filename, 'w') {|output|
 		output.puts(new_header)
 		output.puts(template)
