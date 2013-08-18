@@ -1,59 +1,59 @@
 #!/usr/bin/ruby
 require 'fileutils'
-verbose = ARGV.include?("-v")
+prefs = {}
+prefs[:verbose] = ARGV.include?("-v")
+prefs[:very_verbose] = ARGV.include?("-V")
+if prefs[:very_verbose] then prefs[:verbose] = true end
 
-header = File.open("huby-meat/header.huby") {|head| head.read()}
-footer = File.open("huby-meat/footer.huby") {|foot| foot.read()}
-navbar = File.open("huby-meat/navbar.huby") {|nav| nav.read()}
-
-links = {"navbar" => navbar,
-		 "index" => "index.html", 
-		 "index_button" => "btn",
-		 "about" => "about.html",
-		 "about_button" => "btn",
-		 "contact" => "contact.php",
-		 "contact_button" => "btn",
-		 "projects" => "projects.html",
-		 "projects_button" => "btn",
-		 "projects/palsulich" => "projects/palsulich.html",
-		 "projects/palsulich_button" => "",
-		 "carousel" => "assets/css/carousel.css",
-		 "custom" => "assets/css/custom.css",
-		 "bootstrap" => "assets/css/bootstrap.css",
-		 "bootstrap.js" => "assets/js/bootstrap.js",
-		 "jquery.js" => "assets/js/jquery-2.0.3.js"}
+common = {}
+common["header"] = File.open("huby-meat/header.huby") {|head| head.read()}
+common["footer"] = File.open("huby-meat/footer.huby") {|foot| foot.read()}
+common["navbar"] = File.open("huby-meat/navbar.huby") {|navb| navb.read()}
+configFile = File.open("huby-meat/config.huby") {|conf| conf.read()}
+config = {}
+configFile = configFile.split(",")
+configFile.each do |pair|
+	pair = pair.split("=>")
+	pair.each do |item| item.strip! end
+	if pair[1].include?("@")
+		pair[1] = common[pair[1].delete("@")]
+	end
+	config.merge!({pair[0] => pair[1]})
+end
 
 pattern = File.join("huby-meat/bodies", "**", "*.huby")
 bodies = Dir.glob(pattern)
-puts bodies.size
+if prefs[:verbose] then puts "Number of bodies: #{bodies.size}" end
 bodies.each do |file| 
-	links_key = ""
+	config_key = ""
 	old_link = ""
 	filename = ""
 	folder_adjustment = ""
 	filename = file[file.index("huby-meat") + "huby-meat/bodies/".length .. file.index(".huby") - 1]
-	links_key = filename[0..filename.index(".") - 1]
-	old_link = links[links_key]
-	folder_adjustment = "../" * links_key.scan("\/").size
-	links[links_key] = "#"
-	if links.has_key?(links_key + "_button") then 
-		links[links_key + "_button"] += " active"
+	config_key = filename[0..filename.index(".") - 1]
+	old_link = config[config_key]
+	folder_adjustment = "../" * config_key.scan("\/").size
+	config[config_key] = "#"
+	if config.has_key?(config_key + "_button") then 
+		config[config_key + "_button"] += " active"
 	end
 	filename = Dir.getwd + "/public/" + filename
-	if(verbose)
+	if(prefs[:verbose])
+		puts
 		puts "filename: " + filename
-		puts "links_key: " + links_key
+		puts "config_key: " + config_key
 		puts "old_link: " + old_link
 	end
 	template = File.open(file) {|f| f.read()}
-	new_header = String.new(header)
-	new_footer = String.new(footer)
-	new_navbar = String.new(navbar)
-	links.each {|key, value| 
-		if verbose
+	new_header = String.new(common["header"])
+	new_footer = String.new(common["footer"])
+	new_navbar = String.new(common["navbar"])
+	config.each {|key, value| 
+		if prefs[:very_verbose]
 			puts key + " => " + value
 		end
-		value = folder_adjustment + value unless key.include?("button") or value == "#"
+		if value == "nil" then value = "" end
+		value = folder_adjustment + value unless key.include?("button") or value == "#" or value == ""
 		new_header.gsub!("{{{" + key + "}}}", value)
 		template.gsub!("{{{" + key + "}}}", value)
 		new_footer.gsub!("{{{" + key + "}}}", value)
@@ -64,10 +64,10 @@ bodies.each do |file|
 		output.puts(template)
 		output.puts(new_footer)
 	}
-	links[links_key] = old_link
-	if links_key.include?("/") and links.has_key?(links_key + "_button")
-		links[links_key + "_button"] = ""
-	elsif links.has_key?(links_key + "_button") 
-		links[links_key + "_button"] = "btn"
+	config[config_key] = old_link
+	if config_key.include?("/") and config.has_key?(config_key + "_button")
+		config[config_key + "_button"] = ""
+	elsif config.has_key?(config_key + "_button") 
+		config[config_key + "_button"] = "btn"
 	end
 end
