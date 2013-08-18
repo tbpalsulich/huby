@@ -5,7 +5,8 @@ header = File.open("huby-meat/header.huby") {|head| head.read()}
 footer = File.open("huby-meat/footer.huby") {|foot| foot.read()}
 navbar = File.open("huby-meat/navbar.huby") {|nav| nav.read()}
 
-links = {"index" => "index.html", 
+links = {"navbar" => navbar,
+		 "index" => "index.html", 
 		 "index_button" => "btn",
 		 "about" => "about.html",
 		 "about_button" => "btn",
@@ -19,18 +20,17 @@ links = {"index" => "index.html",
 		 "custom" => "assets/css/custom.css",
 		 "bootstrap" => "assets/css/bootstrap.css",
 		 "bootstrap.js" => "assets/js/bootstrap.js",
-		 "jquery.js" => "assets/js/jquery-2.0.3.js",
-		 "navbar" => navbar}
+		 "jquery.js" => "assets/js/jquery-2.0.3.js"}
 
-pattern = File.join("**", "huby-meat/bodies", "**", "*.huby")
+pattern = File.join("huby-meat/bodies", "**", "*.huby")
 bodies = Dir.glob(pattern)
-
+puts bodies.size
 bodies.each do |file| 
 	links_key = ""
 	old_link = ""
 	filename = ""
 	folder_adjustment = ""
-	filename = file[file.index("huby-meat") + "huby-meat".length + 1 .. file.index(".huby") - 1]
+	filename = file[file.index("huby-meat") + "huby-meat/bodies/".length .. file.index(".huby") - 1]
 	links_key = filename[0..filename.index(".") - 1]
 	old_link = links[links_key]
 	folder_adjustment = "../" * links_key.scan("\/").size
@@ -47,8 +47,11 @@ bodies.each do |file|
 	template = File.open(file) {|f| f.read()}
 	new_header = String.new(header)
 	new_footer = String.new(footer)
+	new_navbar = String.new(navbar)
 	links.each {|key, value| 
-		if verbose then puts key + " => " + value end
+		if verbose
+			puts key + " => " + value
+		end
 		value = folder_adjustment + value unless key.include?("button") or value == "#"
 		new_header.gsub!("{{{" + key + "}}}", value)
 		template.gsub!("{{{" + key + "}}}", value)
