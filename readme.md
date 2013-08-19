@@ -33,12 +33,14 @@ Getting Started
 You have a couple options when you first start using huby. You can create
 the folder structure yourself or you can let huby do it for you. To do it yourself,
 move to whatever folder you have your website source files:
+
     mkdir huby-meat
     cd huby-meat
     touch header.huby
     touch footer.huby
     touch config.huby
     mkdir bodies
+    
 Then fill in the files/folders as described below. Alternatively, run 
 `huby init [output folder] [ignore folder]` inside your root website directory.
 Huby will create the folders and files above then parse through `output folder`,
