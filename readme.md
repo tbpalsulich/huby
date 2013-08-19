@@ -20,11 +20,13 @@ To get started:
     cd $website_directory
     huby init
 
+Then setup config.huby and all of your body files as described below.
+
 Why?
 ----
 I got tired of copying and pasting changes to every page of a (mostly) static
 website. Particularly for fonts (declared in the header) and changes to the 
-navbar. Also, I wanted to make something myself. Pull **requests are welcome!**
+navbar. Also, I wanted to make something myself. **Pull requests are welcome!**
 
 Getting Started
 ------
@@ -40,11 +42,11 @@ move to whatever folder you have your website source files:
 Then fill in the files/folders as described below. Alternatively, run 
 `huby init [output folder] [ignore folder]` inside your root website directory.
 Huby will create the folders and files above then parse through `output folder`,
-ignoring items in `ignore folder`, creating .huby files within the `bodies` folder.
+ignoring items in `ignore folder`, creating .huby files within the `huby-meat/bodies` folder.
 `huby init` will also initialize config.huby with the specified output folder, and
 sample entries for all of the files. Read the links section for more information on
-how each entry is structured. You`ll want to look through the created files and delete
-ones you don`t want huby managing. In other words, pages that don`t have a common header
+how each entry is structured. You'll want to look through the created files and delete
+ones you don't want huby managing. In other words, pages that don`t have a common header
 and footer. TODO: Autodetect the header and footer.
 
 Using your already existing website, put the content of your
@@ -92,9 +94,9 @@ Then, inside your header (or at the top of every body), put `{{{navbar}}}`. The
 same may obviously be done with the footer or any other piece of reused code.
 Huby will replace whatever it finds with the value in config.huby. However, there
 are some implementation differences between @ entries and regular ones. Regular entries
-are assumed to be describing links (like `index` above), and therefor require additional
-attention to ensure the link is correct on every page. But, @entries do not get special
-attention.
+are assumed to be describing links (like `index` above), and therefore require additional
+attention to ensure the link is correct on every page. But, @ entries do not get special
+attention directly, just the content within them after they get copied.
 
 Output Directory
 ----------------
