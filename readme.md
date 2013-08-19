@@ -1,12 +1,30 @@
 Huby
 ====
-Huby is the reinvention of a very small wheel, used to make maintaining websites easier.
+Huby is the reinvention of a very small wheel, used to make maintaining small websites
+easier.
+
+If you have chunks of repeated code in several files of your website, huby can help you.
+
+Installation
+------------
+Clone the repository, (make sure huby is actually safe to be executed (that I'm not a bad guy)),
+make huby executable, and make sure huby is on your path.
+
+    git clone git@github.com:tpalsulich/huby.git
+    cd huby
+    chmod +x huby
+    echo $PATH
+
+To get started:
+
+    cd $website_directory
+    huby init
 
 Why?
 ----
 I got tired of copying and pasting changes to every page of a (mostly) static
 website. Particularly for fonts (declared in the header) and changes to the 
-navbar. Also, I wanted to make something myself. Pull requests are welcome!
+navbar. Also, I wanted to make something myself. Pull **requests are welcome!**
 
 Getting Started
 ------
@@ -25,28 +43,27 @@ Huby will create the folders and files above then parse through `output folder`,
 ignoring items in `ignore folder`, creating .huby files within the `bodies` folder.
 `huby init` will also initialize config.huby with the specified output folder, and
 sample entries for all of the files. Read the links section for more information on
-how each entry is structured. You'll want to look through the created files and delete
-ones you don't want huby managing. In other words, pages that don't have a common header
+how each entry is structured. You`ll want to look through the created files and delete
+ones you don`t want huby managing. In other words, pages that don`t have a common header
 and footer. TODO: Autodetect the header and footer.
 
 Using your already existing website, put the content of your
-* *Header* from `<html>` to `<body>` inclusive in `huby-meat/header.huby`. This should
-be the same in every file you're going to have huby manage.
-* *Footer* from whatever your footer is (still in `<body>`) to `</html>` 
+* **Header** from `<html>` to `<body>` inclusive in `huby-meat/header.huby`. This should
+be the same in every file you`re going to have huby manage.
+* **Footer** from whatever your footer is (still in `<body>`) to `</html>` 
 in `huby-meat/footer.huby`. Again, this should be the same in every file.
-* *The rest* of the content between the header and the footer goes in 
-`huby-meat/bodies/*.[extension].huby`, where `[extension]` is `html`, `php`
-, or whatever the extension of the file should be. This body portion will probably be mostly
-unique. It will get sandwiched between the header and footer. You will also probably have
-many of these files.
+* **The rest** of the content between the header and the footer goes in 
+`huby-meat/bodies/[filename].huby`, where `[filename]` includes the extension of the file to
+be generated (e.g. html). This body portion will probably be mostly unique. It will get
+sandwiched between the header and footer. You will also probably have many of these files.
 
-Configure config.huby next. Ensure you have the proper output folder specified. If you don't
+Configure config.huby next. Ensure you have the proper output folder specified. If you don`t
 specify any in this file, huby will default output to `public`.
 
 Then execute `huby run`.
 For every file in `huby-meat/bodies/`, huby will write the header, the content of the file,
 then the footer in `[output foder]/[filename]` where `[filename]` is simply whatever is in
-the bodies folder minus '.huby'. Simple.
+the bodies folder minus `.huby`. Simple.
 
 Links
 -----
@@ -56,9 +73,9 @@ fill config.huby with urls you will link to. For example,
 
     index => index.html
 
-Now, whenever huby finds an instance of '{{{index}}}' in any .huby files, 
-it will replace it with 'index.html' unless the current file *is* index.html. 
-In that case, a '#' is inserted.
+Now, whenever huby finds an instance of `{{{index}}}` in any .huby files, 
+it will replace it with `index.html` unless the current file *is* index.html. 
+In that case, a `#` is inserted.
 
 Navbar
 ------
@@ -66,20 +83,23 @@ If you want to use a navbar, you have a couple options. You can put all of the
 navbar content at the bottom of the header file, where it will be copied to the
 top of every body. Or, you can add another entry to the config.huby, where the 
 value is simply the name of the file with the content of your navbar! You must
-put an '@' symbol before the key and value. For example,
+put an `@` symbol before the key and value. For example,
 
     @navbar        => @navbar.huby,
     index          => index.html
 
-
-Then, inside your header (or at the top of every body), put '{{{navbar}}}'. The 
+Then, inside your header (or at the top of every body), put `{{{navbar}}}`. The 
 same may obviously be done with the footer or any other piece of reused code.
-Huby will replace whatever it finds with the value in config.huby.
+Huby will replace whatever it finds with the value in config.huby. However, there
+are some implementation differences between @ entries and regular ones. Regular entries
+are assumed to be describing links (like `index` above), and therefor require additional
+attention to ensure the link is correct on every page. But, @entries do not get special
+attention.
 
 Output Directory
 ----------------
 If you want an output folder different than `public`, you must specify it in
-`config.huby`. Simply add an entry as follows,
+`huby-meat/config.huby`. Simply add an entry as follows,
 
     output_folder  => example_folder,
     @navbar        => @navbar.huby,
@@ -88,7 +108,7 @@ Huby will create the folder if it doesn't exist, then write all of its output in
 that folder.
 
 **NOTE**: The syntax is not very friendly in config.huby. Each entry must be separated by
-a comma (','), every key/value must be separated by "=>", and there must not be a comma
+a comma (`,`), every key/value must be separated by `=>`, and there must not be a comma
 after the last entry.
 
 Active Buttons
@@ -112,6 +132,6 @@ And now, the navbar entry in `navbar.huby` for index would look like:
 
     <li><a href="{{{index}}}" class="{{{index_button}}}">Home</a></li>
 
-If huby is writing index.html, '{{{index}}}' will be replaced by '#' and 
-'{{{index_button}}}' will be replaced by 'btn active'. Other wise, they will be 
-'index.html' and 'btn', respectively.
+If huby is writing index.html, `{{{index}}}` will be replaced by `#` and 
+`{{{index_button}}}` will be replaced by `btn active`. Otherwise, they will be 
+`index.html` and `btn`, respectively.
