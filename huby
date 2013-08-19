@@ -1,73 +1,141 @@
 #!/usr/bin/ruby
-require 'fileutils'
+require 'fileutils'		# Used for directory creation.
+
+# Hash to hold the user's preferences (like where to output files, where to ignore files, what mode, etc.)
 prefs = {}
-prefs[:verbose] = ARGV.include?("-v")
-prefs[:very_verbose] = ARGV.include?("-V")
-if prefs[:very_verbose] then prefs[:verbose] = true end
-
-common = {}
-common["header"] = File.open("huby-meat/header.huby") {|head| head.read()}
-common["footer"] = File.open("huby-meat/footer.huby") {|foot| foot.read()}
-common["navbar"] = File.open("huby-meat/navbar.huby") {|navb| navb.read()}
-configFile = File.open("huby-meat/config.huby") {|conf| conf.read()}
-config = {}
-configFile = configFile.split(",")
-configFile.each do |pair|
-	pair = pair.split("=>")
-	pair.each do |item| item.strip! end
-	if pair[1].include?("@")
-		pair[1] = common[pair[1].delete("@")]
-	end
-	config.merge!({pair[0] => pair[1]})
+prefs[:output_folder] = "public"			# Default to the public folder. Change in config.huby.
+prefs[:ignore_folder] = "******"			# Don't look in this folder for files.
+prefs[:run] = ARGV.include?("run")
+prefs[:verbose] = ARGV.include?("-v")		# Print a little diagnostic info.
+prefs[:very_verbose] = ARGV.include?("-V")	# Print more info.
+if prefs[:very_verbose]
+	prefs[:verbose] = true					# If we're very verbose, we're verbose too.
 end
-
-pattern = File.join("huby-meat/bodies", "**", "*.huby")
-bodies = Dir.glob(pattern)
-if prefs[:verbose] then puts "Number of bodies: #{bodies.size}" end
-bodies.each do |file| 
-	config_key = ""
-	old_link = ""
-	filename = ""
-	folder_adjustment = ""
-	filename = file[file.index("huby-meat") + "huby-meat/bodies/".length .. file.index(".huby") - 1]
-	config_key = filename[0..filename.index(".") - 1]
-	old_link = config[config_key]
-	folder_adjustment = "../" * config_key.scan("\/").size
-	config[config_key] = "#"
-	if config.has_key?(config_key + "_button") then 
-		config[config_key + "_button"] += " active"
-	end
-	filename = Dir.getwd + "/public/" + filename
-	if(prefs[:verbose])
-		puts
-		puts "filename: " + filename
-		puts "config_key: " + config_key
-		puts "old_link: " + old_link
-	end
-	template = File.open(file) {|f| f.read()}
-	new_header = String.new(common["header"])
-	new_footer = String.new(common["footer"])
-	new_navbar = String.new(common["navbar"])
-	config.each {|key, value| 
-		if prefs[:very_verbose]
-			puts key + " => " + value
+prefs[:init] = ARGV.include?("init")		# Create config, header, and footer files.
+if prefs[:init]
+	prefs[:output_folder] = ARGV[1] unless ARGV.size < 2	# Optionally supply output folder
+	prefs[:ignore_folder] = ARGV[2] unless ARGV.size < 3	# and folder to not look through for body files.
+end
+if !prefs[:init] and !prefs[:run]			# We're not running or initializing, so print usage info.
+	puts "Usage:"
+	puts "   init [output folder] [ignore folder]:"
+	puts "        Creates a new huby project, looking through all of [output folder],"
+	puts "        but ignoring [ignore folder]."
+	puts "   run: Run huby, generating the pages from the .huby files."
+	puts "   -v: Print verbose state information while running."
+	puts "   -V: Print very verbose state information while running."
+elsif prefs[:init]
+	configs = []		# Array to hold all of the filenames of files we need to create/add to config.huby.
+	FileUtils.mkdir_p("huby-meat/bodies")		# Create the bodies directory, if it doesn't exist.
+	pattern = File.join(prefs[:output_folder], "**", "*")		# Find all files in the output folder.
+	files = Dir.glob(pattern)
+	files.each do |file|
+		if !file.include?(prefs[:ignore_folder]) and File.file?(file)	# Every file in folders we aren't ignoring.
+			content = File.open(file, 'r') {|file| file.read()}			# Copy the contents of the file in order to write to the body.
+			file.sub!(prefs[:output_folder] + "/", "")					# Make file just the name relative to output root.
+			if file.include?("/")					# If the file has extra directories, mimic those directories in the bodies folder.
+				FileUtils.mkdir_p("huby-meat/bodies/" + file[0..file.rindex("/")])
+			end
+			output_file = File.open("huby-meat/bodies/" + file + ".huby", 'w') {|output|
+				output.puts(content)					# Write the content to the otherwise empty *.huby files.
+			}
+			configs.push([file.sub(".*", ""), file])	# Push to the configs array to store the filename for config.huby later.
 		end
-		if value == "nil" then value = "" end
-		value = folder_adjustment + value unless key.include?("button") or value == "#" or value == ""
-		new_header.gsub!("{{{" + key + "}}}", value)
-		template.gsub!("{{{" + key + "}}}", value)
-		new_footer.gsub!("{{{" + key + "}}}", value)
-		}
-	FileUtils.mkdir_p(filename[0..filename.rindex("/")]) unless File.exists?(filename)
-	output_file = File.open(filename, 'w') {|output|
-		output.puts(new_header)
-		output.puts(template)
-		output.puts(new_footer)
+	end
+	header_file = File.open("huby-meat/header.huby", 'w') {|header|		# User must fix this.
+		header.puts("# Copy and paste the header common to all of your pages.")
 	}
-	config[config_key] = old_link
-	if config_key.include?("/") and config.has_key?(config_key + "_button")
-		config[config_key + "_button"] = ""
-	elsif config.has_key?(config_key + "_button") 
-		config[config_key + "_button"] = "btn"
+	footer_file = File.open("huby-meat/footer.huby", 'w') {|footer|		# User must also fix this.
+		footer.puts("# Copy and paste the footer common to all of your pages.")
+	}
+	config_file = File.open("huby-meat/config.huby", 'w') {|config|		# Will definitely need to check this file out too.
+		config.puts("output_folder => #{prefs[:output_folder]}")		# When running, will read this line to get folder.
+		configs.each do |pair|
+			config.puts(pair[0] + "=>" + pair[1])						# Syntax of config.huby is `key => value,` ... `key_n => value_n`
+		end
+	}
+elsif prefs[:run]
+	common = {}			# Hash to hold the header and footer. Convenient for using strings as "variable names."
+	common["header"] = File.open("huby-meat/header.huby") {|head| head.read()}
+	common["footer"] = File.open("huby-meat/footer.huby") {|foot| foot.read()}
+	configFile = File.open("huby-meat/config.huby") {|conf| conf.read()}
+	config = {}			# Hash we'll store all of the replacement values in.
+	configFile = configFile.split(",")		# Split into key value pairs.
+	configFile.each do |pair|
+		pair = pair.split("=>")				# Split each pair into key and value.
+		pair.each do |item|
+			item.strip! 					# Remove any surrounding whitespace.
+		end
+		if pair[1].include?("@")			# '@' indicates a file, so replace the value with that file's content.
+			pair[1] = File.open("huby-meat/" + pair[1].delete("@")) {|file| file.read()}
+		end
+		if pair[0].include?("#")
+			# Ignore this line, it's a comment.
+		elsif pair[0].eql?("output_folder")		# Set the output folder based on the config.huby entry.
+			prefs[:output_folder] = pair[1]
+		else
+			config.merge!({pair[0] => pair[1]})	# If we've gotten here, add the values to the hash.
+		end
+	end
+
+	pattern = File.join("huby-meat/bodies", "**", "*.huby")		# Find all .huby files.
+	bodies = Dir.glob(pattern)
+	if prefs[:verbose] 
+		puts "Number of bodies: #{bodies.size}"
+	end
+	bodies.each do |file| 
+		config_key = ""		# Start by resetting the string values.
+		old_value = ""
+		filename = ""
+		folder_adjustment = ""
+		# filename will hold the directory and name of each file to be written relative to the output root.
+		filename = file[file.index("huby-meat") + "huby-meat/bodies/".length .. file.index(".huby") - 1]
+		config_key = filename[0..filename.index(".") - 1]	# Used to look into the config hash.
+		old_value = config[config_key]						# Store the old hash value so we can change the value.
+		# All config entries are relative to output root. So, adjust for it when not actually *in* output root.
+		folder_adjustment = "../" * config_key.scan("\/").size
+		config[config_key] = "#"		# Don't let pages link to themselves.
+		if config.has_key?(config_key + "_button")			# If there is a button for this page (like in a navbar), set it to active.
+			if config[config_key + "_button"].eql?("nil")	# But, if that button is nil, set it to "" first, since we will append
+				config[config_key + "_button"] = ""			# " active" to the value.
+			end
+			config[config_key + "_button"] += " active"		# The button for this page is now active!
+		end
+		filename = Dir.getwd + "/" + prefs[:output_folder] + "/" + filename 	# Now filename the full path of the file.
+		if prefs[:verbose]
+			puts
+			puts "filename: " + filename
+			puts "config_key: " + config_key
+			puts "old_value: " + old_value
+		end
+		body = File.open(file) {|f| f.read()}				# Read the contents into memory. We still need to replace {{{}}} entries.
+		new_header = String.new(common["header"])			# Make copies of the header and footer so we can make replacements.
+		new_footer = String.new(common["footer"])
+		config.each {|key, value| 
+			if prefs[:very_verbose]
+				puts key + " => " + value
+			end
+			if value == "nil"	# Don't print nil!
+				value = ""
+			end
+			# Adjust for folders unless you aren't actually printing a link (button, comment, files, etc).
+			value = folder_adjustment + value unless key.include?("button") or value == "#" or value == "" or key.include?("@")
+			new_header.gsub!("{{{" + key + "}}}", value)	# Replace all instances of {{{}}} variables.
+			body.gsub!("{{{" + key + "}}}", value)
+			new_footer.gsub!("{{{" + key + "}}}", value)
+		}
+		FileUtils.mkdir_p(filename[0..filename.rindex("/")]) unless File.exists?(filename)	# Make sure we can write the file.
+		output_file = File.open(filename, 'w') {|output|	# Don't think, just write.
+			output.puts(new_header)
+			output.puts(body)
+			output.puts(new_footer)
+		}
+		# Reset the config hash.
+		config[config_key] = old_value
+		if config_key.include?("/") and config.has_key?(config_key + "_button")
+			config[config_key + "_button"] = "nil"
+		elsif config.has_key?(config_key + "_button") 
+			config[config_key + "_button"] = "btn"
+		end
 	end
 end
