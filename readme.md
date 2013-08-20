@@ -36,12 +36,11 @@ move to whatever folder you have your website source files:
 
     mkdir huby-meat
     cd huby-meat
-    touch header.huby
-    touch footer.huby
     touch config.huby
     mkdir bodies
     
-Then fill in the files/folders as described below. Alternatively, run 
+Then fill in the files/folders as described below. Most people will want a header and a footer,
+since that is the point of huby. But, they are not mandatory. Alternatively, run 
 `huby init [output folder] [ignore folder]` inside your root website directory.
 Huby will create the folders and files above then parse through `output folder`,
 ignoring items in `ignore folder`, creating .huby files within the `huby-meat/bodies` folder.
@@ -58,8 +57,9 @@ be the same in every file you`re going to have huby manage.
 in `huby-meat/footer.huby`. Again, this should be the same in every file.
 * **The rest** of the content between the header and the footer goes in 
 `huby-meat/bodies/[filename].huby`, where `[filename]` includes the extension of the file to
-be generated (e.g. html). This body portion will probably be mostly unique. It will get
-sandwiched between the header and footer. You will also probably have many of these files.
+be generated (e.g. html). This body portion will probably be mostly unique. If you want a header,
+simply add `{{{@header}}}` to the top. Same goes for the footer. You will also probably have many
+of these files. These will correspond to entries in `config.huby`. 
 
 Configure config.huby next. Ensure you have the proper output folder specified. If you don`t
 specify any in this file, huby will default output to `public`.
@@ -81,24 +81,23 @@ Now, whenever huby finds an instance of `{{{index}}}` in any .huby files,
 it will replace it with `index.html` unless the current file *is* index.html. 
 In that case, a `#` is inserted.
 
-Navbar
+Headers, Navbars, and Footers
 ------
-If you want to use a navbar, you have a couple options. You can put all of the
-navbar content at the bottom of the header file, where it will be copied to the
-top of every body. Or, you can add another entry to the config.huby, where the 
-value is simply the name of the file with the content of your navbar! You must
-put an `@` symbol before the key and value. For example,
+Create separate files in the `huby-meat` directory with the content of your headers,
+navbars, and footers. Then, add entries in `config.huby` as follows:
 
+    @[keyword]     => @[filename]
+
+For example, your `huby.config` could look like this:
+
+    @header        => @header.huby,
+    @footer        => @footer.huby,
     @navbar        => @navbar.huby,
     index          => index.html
 
-Then, inside your header (or at the top of every body), put `{{{navbar}}}`. The 
-same may obviously be done with the footer or any other piece of reused code.
-Huby will replace whatever it finds with the value in config.huby. However, there
-are some implementation differences between @ entries and regular ones. Regular entries
-are assumed to be describing links (like `index` above), and therefore require additional
-attention to ensure the link is correct on every page. But, @ entries do not get special
-attention directly, just the content within them after they get copied.
+Now, wherever you put {{{@header}}} in a `huby-meat/bodies` file, it will be replaced
+by the content of the file `huby-meat/header.huby`. However, since index does not have
+an `@`, it is assumed to be describing a link (and not a file).
 
 Output Directory
 ----------------
@@ -106,9 +105,12 @@ If you want an output folder different than `public`, you must specify it in
 `huby-meat/config.huby`. Simply add an entry as follows,
 
     output_folder  => example_folder,
+    @header        => @header.huby,
+    @footer        => @footer.huby,
     @navbar        => @navbar.huby,
     index          => index.html
-Huby will create the folder if it doesn't exist, then write all of its output inside
+
+Huby will create the output folder if it doesn't exist, then write all of its output inside
 that folder.
 
 **NOTE**: The syntax is not very friendly in config.huby. Each entry must be separated by
