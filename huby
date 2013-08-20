@@ -36,7 +36,7 @@ elsif prefs[:init]
 			if file.include?("/")					# If the file has extra directories, mimic those directories in the bodies folder.
 				FileUtils.mkdir_p("huby-meat/bodies/" + file[0..file.rindex("/")])
 			end
-			output_file = File.open("huby-meat/bodies/" + file + ".huby", 'w') {|output|
+			File.open("huby-meat/bodies/" + file + ".huby", 'w') {|output|
 				output.puts(content)					# Write the content to the otherwise empty *.huby files.
 			}
 			configs.push([file.sub(".*", ""), file])	# Push to the configs array to store the filename for config.huby later.
@@ -55,9 +55,8 @@ elsif prefs[:init]
 		end
 	}
 elsif prefs[:run]
-	common = {}			# Hash to hold the header and footer. Convenient for using strings as "variable names."
-	common["header"] = File.open("huby-meat/header.huby") {|head| head.read()}
-	common["footer"] = File.open("huby-meat/footer.huby") {|foot| foot.read()}
+	header_content = File.open("huby-meat/header.huby") {|head| head.read()}
+	footer_content = File.open("huby-meat/footer.huby") {|foot| foot.read()}
 	configFile = File.open("huby-meat/config.huby") {|conf| conf.read()}
 	config = {}			# Hash we'll store all of the replacement values in.
 	configFile = configFile.split(",")		# Split into key value pairs.
@@ -109,8 +108,8 @@ elsif prefs[:run]
 			puts "old_value: " + old_value
 		end
 		body = File.open(file) {|f| f.read()}				# Read the contents into memory. We still need to replace {{{}}} entries.
-		new_header = String.new(common["header"])			# Make copies of the header and footer so we can make replacements.
-		new_footer = String.new(common["footer"])
+		new_header = String.new(header_content)				# Make copies of the header and footer so we can make replacements.
+		new_footer = String.new(footer_content)
 		config.each {|key, value| 
 			if prefs[:very_verbose]
 				puts key + " => " + value
@@ -125,7 +124,7 @@ elsif prefs[:run]
 			new_footer.gsub!("{{{" + key + "}}}", value)
 		}
 		FileUtils.mkdir_p(filename[0..filename.rindex("/")]) unless File.exists?(filename)	# Make sure we can write the file.
-		output_file = File.open(filename, 'w') {|output|	# Don't think, just write.
+		File.open(filename, 'w') {|output|	# Don't think, just write.
 			output.puts(new_header)
 			output.puts(body)
 			output.puts(new_footer)
