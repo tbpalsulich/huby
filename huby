@@ -1,10 +1,9 @@
 #!/usr/bin/ruby
 require 'fileutils'		# Used for directory creation.
 
-# Hash to hold the user's preferences (like where to output files, where to ignore files, what mode, etc.)
+# Hash to hold the user's preferences (like where to output files, what mode we're running in, etc.)
 prefs = {}
 prefs[:output_folder] = "public"			# Default to the public folder. Change in config.huby.
-prefs[:ignore_folder] = "******"			# Don't look in this folder for files.
 prefs[:run] = ARGV.include?("run")
 prefs[:verbose] = ARGV.include?("-v")		# Print a little diagnostic info.
 prefs[:very_verbose] = ARGV.include?("-V")	# Print more info.
@@ -14,13 +13,11 @@ end
 prefs[:init] = ARGV.include?("init")		# Create config, header, and footer files.
 if prefs[:init]
 	prefs[:output_folder] = ARGV[1] unless ARGV.size < 2	# Optionally supply output folder
-	prefs[:ignore_folder] = ARGV[2] unless ARGV.size < 3	# and folder to not look through for body files.
 end
 if !prefs[:init] and !prefs[:run]			# We're not running or initializing, so print usage info.
 	puts "Usage:"
-	puts "   init [output folder] [ignore folder]:"
-	puts "        Creates a new huby project, looking through all of [output folder],"
-	puts "        but ignoring [ignore folder]."
+	puts "   init [output folder]:"
+	puts "        Creates a new huby project, looking through all of [output folder]."
 	puts "   run: Run huby, generating the pages from the .huby files."
 	puts "   -v: Print verbose state information while running."
 	puts "   -V: Print very verbose state information while running."
@@ -30,7 +27,7 @@ elsif prefs[:init]
 	pattern = File.join(prefs[:output_folder], "**", "*")		# Find all files in the output folder.
 	files = Dir.glob(pattern)
 	files.each do |file|
-		if !file.include?(prefs[:ignore_folder]) and File.file?(file)	# Every file in folders we aren't ignoring.
+		if File.file?(file)	# Every file in folders we aren't ignoring.
 			content = File.open(file, 'r') {|file| file.read()}			# Copy the contents of the file in order to write to the body.
 			file.sub!(prefs[:output_folder] + "/", "")					# Make file just the name relative to output root.
 			if file.include?("/")					# If the file has extra directories, mimic those directories in the bodies folder.
