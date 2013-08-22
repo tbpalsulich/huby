@@ -1,12 +1,14 @@
-Huby
-====
+##Introduction
+
 Huby is the reinvention of a very small wheel, used to make maintaining small websites
 easier.
 
-If you have chunks of repeated code in several files of your website, huby can help you.
+Huby is a website templating program. You put common chunks of code (like headers and navbars)
+in a single spot and all of the unique bits of code in another. Huby then combines them all into
+pages ready for upload &mdash; doing text substitution (for links and styles) along the way.
 
-Installation
-------------
+##Installation
+
 Clone the repository, (make sure huby is actually safe to be executed (that I'm not a bad guy)),
 make huby executable, and make sure huby is on your path.
 
@@ -20,131 +22,74 @@ To get started:
     cd $website_directory
     huby init
 
-Then setup config.huby and all of your body files as described below.
+Then setup `config.huby` and all of your body files as described below.
 
-Why?
-----
-I got tired of copying and pasting changes to every page of a (mostly) static
-website. Particularly for fonts (declared in the header) and changes to the 
-navbar. Also, I wanted to make something myself. **Pull requests are welcome!**
+##Getting Started
 
-Getting Started
-------
-You have a couple options when you first start using huby. You can create
-the folder structure yourself or you can let huby do it for you. To do it yourself,
-move to whatever folder you have your website source files:
+The huby-meat folder holds all of the information huby needs to run. The project
+configuration file `huby-meat/config.huby` contains the settings (like output folder)
+and desired text subsitutions (like for hyperlinks and your header/footer/etc
+files). When you refer to files in `config.huby`, their location is taken as relative
+to the `huby-meat` folder. See more detail in the Configuration section.
 
-    mkdir huby-meat
-    cd huby-meat
-    touch config.huby
-    mkdir bodies
-    
-The huby-meat folder holds the project configuration file (`huby-meat/config.huby`) and all of the
-content files of your site.
+The `huby-meat/bodies/` folder holds all of the unique content of your site. These files
+should be of the form '[name].huby', where [name] is your desired name of the output file
+(for instance, 'index.html.huby' or 'contact.php.huby').
 
-Next, figure out what portions of code are repeated accross your site. Most people will
-want a header and a footer, since that is the point of huby. But, they are not mandatory.
+To get a sample `config.huby` and set of '*.huby' files, run
 
-Preferably, run
+    huby init [output folder]
 
-    `huby init [output folder] [ignore folder]`
-
-inside your root website directory.
+where `[output folder]` has all of your existing website files in it.
 
 Huby will create `.huby` files inside `huby-meat/bodies/` for every file in `output folder`.
-`huby init` will also initialize `config.huby` with the specified output folder, and
-sample entries for all of the files. Read the links section for more information on
-how each entry in `config.huby` is structured. TODO: Autodetect the header and footer.
+`huby init` will also generate a sample `config.huby` with the output folder initialized to
+`[output folder]` and sample entries for all of the files in the same folder. Now, whenever
+you run huby, it will generate the files and write them (maintaining the folder structure in
+`huby-meat/bodies/`) to `[output folder]`.
 
-Using your already existing website, put the content of your
-* **Header** from `<html>` to `<body>` inclusive in `huby-meat/header.huby`. This should
-be the same in every file you`re going to have huby manage.
-* **Footer** from whatever your footer is (still in `<body>`) to `</html>` 
-in `huby-meat/footer.huby`. Again, this should be the same in every file.
-* **The rest** of the content between the header and the footer goes in 
-`huby-meat/bodies/[filename].huby`, where `[filename]` includes the extension of the file to
-be generated (e.g. html). This body portion will probably be mostly unique. If you want a header,
-simply add `{{{@header}}}` to the top. Same goes for the footer. You will also probably have many
-of these files. These will correspond to entries in `config.huby`. 
+TODO: Autodetect repeated chunks of code.
 
-Configure config.huby next. Ensure you have the proper output folder specified. If you don`t
-specify any in this file, huby will default output to `public`.
+##Configuration
 
-Then execute `huby run`.
-For every file in `huby-meat/bodies/`, huby will write the header, the content of the file,
-then the footer in `[output foder]/[filename]` where `[filename]` is simply whatever is in
-the bodies folder minus `.huby`. Simple.
+All of the settings for huby should be in `config.huby`. The format for entries in `config.huby`
+is:
 
-Links
------
-If you wish to make a hyperlink (who would want that?), huby uses a 
-pseudo-templating language to fill in what the exact url is. First, 
-fill config.huby with urls you will link to. For example, 
+    output_folder               => public,
 
-    index => index.html
+    @header                     => @header.huby,
+    @footer                     => @footer.huby,
+    @navbar                     => @navbar.huby,
 
-Now, whenever huby finds an instance of `{{{index}}}` in any .huby files, 
-it will replace it with `index.html` unless the current file *is* index.html. 
-In that case, a `#` is inserted.
+    active_button               => btn active,
 
-Headers, Navbars, and Footers
-------
-Create separate files in the `huby-meat` directory with the content of your headers,
-navbars, and footers. Then, add entries in `config.huby` as follows:
+    index                       => index.html, 
+    index_button                => btn,
+    projects/palsulich          => projects/palsulich.html,
+    projects/palsulich_button   => :projects_button,
 
-    @[keyword]     => @[filename]
+Whitespace doesn't matter. "output_folder", ",", "=>", "@", "_button", "active_button", and ":" do, though.
+* "," and "=>" are used to separate different entries and keys/values. 
+* "@" signifies this content is in a file located at the specified name (relative to `huby-meat/`).
+Use files for your common chunks of code like your navbar. 
+* "_button" indicates elements that will need specific styling when that page is active. When it
+is active, its value will be set to the value pointed to by "active_button". The part before the "_"
+should be the same as the key for the page the button will be active on, as the index button is above.
+Huby will automatically check if there is a "_button" entry.
+* "active_button" indicates what the value a "_button" entry should have when that button is active.
+* ":" indicates the state of this button is connected to the button after the ":". So, whenever the
+projects/palsulich_button value would be activated, the projects_button value is instead.
+This is useful for dropdown menus.
 
-For example, your `huby.config` could look like this:
+##Using the Configuration
+Inside any `.huby` file, whenever you write `{{{key}}}`, it will be replaced by what is pointed to
+by `key` in `config.huby`. When 
 
-    @header        => @header.huby,
-    @footer        => @footer.huby,
-    @navbar        => @navbar.huby,
-    index          => index.html
-
-Now, wherever you put {{{@header}}} in a `huby-meat/bodies` file, it will be replaced
-by the content of the file `huby-meat/header.huby`. However, since index does not have
-an `@`, it is assumed to be describing a link (and not a file).
-
-Output Directory
-----------------
-If you want an output folder different than `public`, you must specify it in
-`huby-meat/config.huby`. Simply add an entry as follows,
-
-    output_folder  => example_folder,
-    @header        => @header.huby,
-    @footer        => @footer.huby,
-    @navbar        => @navbar.huby,
-    index          => index.html
-
-Huby will create the output folder if it doesn't exist, then write all of its output inside
-that folder.
-
-**NOTE**: The syntax is not very friendly in config.huby. Each entry must be separated by
-a comma (`,`) and every key/value must be separated by `=>`.
-
-Active Buttons
---------------
-The links logic from above can be applied to buttons as well. If you have several 
-buttons in your navbar, but you want the current page button to be styled differently 
-than the rest of the buttons, then create an entry in `config.huby` with the key 
-`[key of links hash entry of the page being linked to]_button` with whatever the 
-default button class is (like Bootstrap `btn`) as the value. Then, huby will catch 
-when a button should be changed to active (when that body is being written), and 
-append `active` to the value in the hash. For example,
-
-    output_folder  => example_folder,
-    @header        => @header.huby,
-    @footer        => @footer.huby,
-    @navbar        => @navbar.huby,
-    index          => index.html,
-    index_button   => btn,
-    active_button  => btn active
-
-And now, the navbar entry in `navbar.huby` for index would look like:
+A line in `navbar.huby` could look like:
 
     <li><a href="{{{index}}}" class="{{{index_button}}}">Home</a></li>
 
-and be replaced by either,
+It will be replaced by either,
 
     <li><a href="index.html" class="btn">Home</a></li>
 
@@ -153,3 +98,12 @@ or
     <li><a href="#" class="btn active">Home</a></li>
 
 Depending on what file is currently being written.
+
+The most basic `*.huby` file with the header, navbar and footer is:
+
+    {{{header}}}
+    {{{navbar}}}
+
+    {{{footer}}}
+
+Put whatever makes this page unique between.
