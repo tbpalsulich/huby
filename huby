@@ -58,19 +58,21 @@ elsif prefs[:run]
 	config = {}			# Hash we'll store all of the replacement values in.
 	configFile = configFile.split(",")		# Split into key value pairs.
 	configFile.each do |pair|
-		pair = pair.split("=>")				# Split each pair into key and value.
-		pair.each do |item|
-			item.strip! 					# Remove any surrounding whitespace.
-		end
-		if pair[1].include?("@")			# '@' indicates a file, so replace the value with that file's content.
-			pair[1] = File.open("huby-meat/" + pair[1].delete("@")) {|file| file.read()}
-		end
-		if pair[0].include?("#")
-			# Ignore this line, it's a comment.
-		elsif pair[0].eql?("output_folder")		# Set the output folder based on the config.huby entry.
-			prefs[:output_folder] = pair[1]
-		else
-			config.merge!({pair[0] => pair[1]})	# If we've gotten here, add the values to the hash.
+		unless pair[0].nil? or pair[1].nil?
+			pair = pair.split("=>")				# Split each pair into key and value.
+			pair.each do |item|
+				item.strip! 					# Remove any surrounding whitespace.
+			end
+			if pair[1].include?("@")			# '@' indicates a file, so replace the value with that file's content.
+				pair[1] = File.open("huby-meat/" + pair[1].delete("@")) {|file| file.read()}
+			end
+			if pair[0].include?("#")
+				# Ignore this line, it's a comment.
+			elsif pair[0].eql?("output_folder")		# Set the output folder based on the config.huby entry.
+				prefs[:output_folder] = pair[1]
+			else
+				config.merge!({pair[0] => pair[1]})	# If we've gotten here, add the values to the hash.
+			end
 		end
 	end
 
@@ -84,6 +86,10 @@ elsif prefs[:run]
 		old_value = ""
 		filename = ""
 		folder_adjustment = ""
+		old_button_value = ""
+		old_slash_button_value = ""
+		old_super_value = ""
+		super_key = ""
 		# filename will hold the directory and name of each file to be written relative to the output root.
 		filename = file[file.index("huby-meat") + "huby-meat/bodies/".length .. file.index(".huby") - 1]
 		config_key = filename[0..filename.index(".") - 1]	# Used to look into the config hash.
@@ -92,10 +98,14 @@ elsif prefs[:run]
 		folder_adjustment = "../" * config_key.scan("\/").size
 		config[config_key] = "#"		# Don't let pages link to themselves.
 		if config.has_key?(config_key + "_button")			# If there is a button for this page (like in a navbar), set it to active.
-			if config[config_key + "_button"].eql?("nil")	# But, if that button is nil, set it to "" first, since we will append
-				config[config_key + "_button"] = ""			# " active" to the value.
+			if config[config_key + "_button"].start_with?(":")
+				super_key = config[config_key + "_button"][1..-1]
+				old_super_value = config[super_key]
+				config[super_key] = config["active_button"]
+			else
+				old_button_value = config[config_key + "_button"]
 			end
-			config[config_key + "_button"] += " active"		# The button for this page is now active!
+			config[config_key + "_button"] = config["active_button"]		# The button for this page is now active!
 		end
 		filename = Dir.getwd + "/" + prefs[:output_folder] + "/" + filename 	# Now filename the full path of the file.
 		if prefs[:verbose]
@@ -104,16 +114,13 @@ elsif prefs[:run]
 			puts "config_key: " + config_key
 			puts "old_value: " + old_value
 		end
-		body = File.open(file) {|f| f.read()}				# Read the contents into memory. We still need to replace {{{}}} entries.
+		body = File.open(file) {|f| f.read()}		# Read the contents into memory. We still need to replace {{{}}} entries.
 		config.each {|key, value| 
 			if prefs[:very_verbose]
 				puts key + " => " + value
 			end
-			if value == "nil"	# Don't print nil!
-				value = ""
-			end
 			# Adjust for folders unless you aren't actually printing a link (button, comment, files, etc).
-			value = folder_adjustment + value unless key.include?("button") or value == "#" or value == "" or key.include?("@")
+			value = folder_adjustment + value unless key.include?("_button") or value == "#" or value == "" or key.include?("@")
 			body.gsub!("{{{" + key + "}}}", value)
 		}
 		FileUtils.mkdir_p(filename[0..filename.rindex("/")]) unless File.exists?(filename)	# Make sure we can write the file.
@@ -122,10 +129,11 @@ elsif prefs[:run]
 		}
 		# Reset the config hash.
 		config[config_key] = old_value
-		if config_key.include?("/") and config.has_key?(config_key + "_button")
-			config[config_key + "_button"] = "nil"
-		elsif config.has_key?(config_key + "_button") 
-			config[config_key + "_button"] = "btn"
+		if config.has_key?(config_key + "_button") 
+			config[config_key + "_button"] = old_button_value
+		end
+		if !old_super_value.eql?("")
+			config[super_key] = old_super_value
 		end
 	end
 end
