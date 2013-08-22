@@ -39,16 +39,22 @@ move to whatever folder you have your website source files:
     touch config.huby
     mkdir bodies
     
-Then fill in the files/folders as described below. Most people will want a header and a footer,
-since that is the point of huby. But, they are not mandatory. Alternatively, run 
-`huby init [output folder] [ignore folder]` inside your root website directory.
-Huby will create the folders and files above then parse through `output folder`,
-ignoring items in `ignore folder`, creating .huby files within the `huby-meat/bodies` folder.
-`huby init` will also initialize config.huby with the specified output folder, and
+The huby-meat folder holds the project configuration file (`huby-meat/config.huby`) and all of the
+content files of your site.
+
+Next, figure out what portions of code are repeated accross your site. Most people will
+want a header and a footer, since that is the point of huby. But, they are not mandatory.
+
+Preferably, run
+
+    `huby init [output folder] [ignore folder]`
+
+inside your root website directory.
+
+Huby will create `.huby` files inside `huby-meat/bodies/` for every file in `output folder`.
+`huby init` will also initialize `config.huby` with the specified output folder, and
 sample entries for all of the files. Read the links section for more information on
-how each entry is structured. You'll want to look through the created files and delete
-ones you don't want huby managing. In other words, pages that don`t have a common header
-and footer. TODO: Autodetect the header and footer.
+how each entry in `config.huby` is structured. TODO: Autodetect the header and footer.
 
 Using your already existing website, put the content of your
 * **Header** from `<html>` to `<body>` inclusive in `huby-meat/header.huby`. This should
@@ -114,30 +120,36 @@ Huby will create the output folder if it doesn't exist, then write all of its ou
 that folder.
 
 **NOTE**: The syntax is not very friendly in config.huby. Each entry must be separated by
-a comma (`,`), every key/value must be separated by `=>`, and there must not be a comma
-after the last entry.
+a comma (`,`) and every key/value must be separated by `=>`.
 
 Active Buttons
 --------------
 The links logic from above can be applied to buttons as well. If you have several 
 buttons in your navbar, but you want the current page button to be styled differently 
-than the rest of the buttons, then create an entry in the `links` hash with the key 
+than the rest of the buttons, then create an entry in `config.huby` with the key 
 `[key of links hash entry of the page being linked to]_button` with whatever the 
 default button class is (like Bootstrap `btn`) as the value. Then, huby will catch 
 when a button should be changed to active (when that body is being written), and 
 append `active` to the value in the hash. For example,
 
-    navbar = File.open("huby-meat/navbar.huby") {|nav| nav.read()}
-    links = {
-        "index" => "index.html"
-        "index_button" => "btn"
-        "navbar" => navbar
-    }
+    output_folder  => example_folder,
+    @header        => @header.huby,
+    @footer        => @footer.huby,
+    @navbar        => @navbar.huby,
+    index          => index.html,
+    index_button   => btn,
+    active_button  => btn active
 
 And now, the navbar entry in `navbar.huby` for index would look like:
 
     <li><a href="{{{index}}}" class="{{{index_button}}}">Home</a></li>
 
-If huby is writing index.html, `{{{index}}}` will be replaced by `#` and 
-`{{{index_button}}}` will be replaced by `btn active`. Otherwise, they will be 
-`index.html` and `btn`, respectively.
+and be replaced by either,
+
+    <li><a href="index.html" class="btn">Home</a></li>
+
+or
+
+    <li><a href="#" class="btn active">Home</a></li>
+
+Depending on what file is currently being written.
