@@ -1,27 +1,69 @@
 #!/usr/bin/ruby
 require 'fileutils'		# Used for directory creation.
 
+class String
+  # colorization
+  def colorize(color_code)
+    "\e[#{color_code}m#{self}\e[0m"
+  end
+
+  def red
+    colorize(31)
+  end
+
+  def green
+    colorize(32)
+  end
+
+  def yellow
+    colorize(33)
+  end
+end
+
+def usage()
+	puts "Usage:"
+	puts "   -h".green + ": Print this usage information."
+	puts "   init [output folder]".green + ":"
+	puts "        Creates a new huby project, looking through all of [output folder]."
+	puts "   run".green + ": Run huby, generating the pages from the .huby files."
+	puts "   -v".green + ": Print verbose state information while running."
+	puts "   -V".green + ": Print very verbose state information while running."
+	exit
+end
+
+# ------------------------------------------------------------------
+# ------------ Process the command line arguments ------------------
+# ------------------------------------------------------------------
+
 # Hash to hold the user's preferences (like where to output files, what mode we're running in, etc.)
 prefs = {}
 prefs[:run] = ARGV.include?("run")
 prefs[:verbose] = ARGV.include?("-v") or ARGV.include?("-V") # Print a little diagnostic info.
 prefs[:very_verbose] = ARGV.include?("-V")	# Print more info.
 prefs[:init] = ARGV.include?("init")		# Create config, header, and footer files.
+if ARGV.include?("-h")
+	usage
+end
 if prefs[:init]
-	prefs[:output_folder] = ARGV[1] unless ARGV.size < 2	# Optionally supply output folder
+	if ARGV.size < 2						# Incorrect command! Didn't provide output folder.
+		puts "Error: ".red + "Please provide an output folder (to scan for existing files)."
+		usage
+	else
+		prefs[:output_folder] = ARGV[1] unless ARGV.size < 2	# Optionally supply output folder
+	end
 else
 	prefs[:output_folder] = "public"			# Default to the public folder. Change in config.huby.
 end
-if !prefs[:init] and !prefs[:run]			# We're not running or initializing, so print usage info.
-	puts "Usage:"
-	puts "   init [output folder]:"
-	puts "        Creates a new huby project, looking through all of [output folder]."
-	puts "   run: Run huby, generating the pages from the .huby files."
-	puts "   -v: Print verbose state information while running."
-	puts "   -V: Print very verbose state information while running."
+
+# ------------------------------------------------------------
+# ------------ Run huby given the arguments ------------------
+# ------------------------------------------------------------
+if !prefs[:init] and !prefs[:run]			# Incorrect command!
+	puts "Error:".red
+	usage
 elsif prefs[:init]
 	configs = []		# Array to hold all of the filenames of files we need to create/add to config.huby.
-	puts "Creating huby-meat/bodies/ directory."
+	puts "Creating".green + " huby-meat/bodies/ directory."
 	FileUtils.mkdir_p("huby-meat/bodies")
 	files = Dir.glob(File.join(prefs[:output_folder], "**", "*")) # Find all files in the output folder.
 	files.each do |file|
@@ -29,25 +71,26 @@ elsif prefs[:init]
 			content = File.open(file, 'r') {|file| file.read()}			# Copy the contents of the file in order to write to the body.
 			file.sub!(prefs[:output_folder] + "/", "")					# Make file just the name relative to output root.
 			if file.include?("/")					# If the file has extra directories, mimic those directories in the bodies folder.
-				puts "Creating subdirectory " + file[0..file.rindex("/")]
+				puts "Creating".green + " subdirectory " + file[0..file.rindex("/")]
 				FileUtils.mkdir_p("huby-meat/bodies/" + file[0..file.rindex("/")])
 			end
 			File.open("huby-meat/bodies/" + file + ".huby", 'w') {|output|
-				puts "Creating huby-meat/bodies/" + file + ".huby"
+				puts "Writing".yellow + " huby-meat/bodies/" + file + ".huby"
+				puts
 				output.puts(content)					# Write the content to the otherwise empty *.huby files.
 			}
 			configs.push([file.sub(".*", ""), file])	# Push to the configs array to store the filename for config.huby later.
 		end
 	end
-	puts "Creating huby-meat/header.huby."
+	puts "Writing".yellow + " huby-meat/header.huby."
 	File.open("huby-meat/header.huby", 'w') {|header|		# User must fix this file.
 		header.puts("# Copy and paste the header common to all of your pages.")
 	}
-	puts "Creating huby-meat/footer.huby."
+	puts "Writing".yellow + " huby-meat/footer.huby."
 	File.open("huby-meat/footer.huby", 'w') {|footer|		# User must also fix this file.
 		footer.puts("# Copy and paste the footer common to all of your pages.")
 	}
-	puts "Creating huby-meat/config.huby."
+	puts "Writing".yellow + " huby-meat/config.huby."
 	File.open("huby-meat/config.huby", 'w') {|config|				# Will definitely need to check this file out too.
 		config.puts("output_folder".ljust(30) + "=> #{prefs[:output_folder]}")	# When running, will read this line to get folder.
 		config.puts("@header".ljust(30) + "=> @header.huby")
@@ -63,7 +106,7 @@ elsif prefs[:run]
 		pair = pair.split("=>")				# Split each pair into key and value.
 		unless pair[0].nil? or pair[1].nil?
 			if pair.size > 2
-				puts "Syntax error in config.huby near '" + pair[0].strip + "' on line " + (line_num + 1).to_s + "."
+				puts "Syntax error".red + " in config.huby near '" + pair[0].strip + "' on line " + (line_num + 1).to_s + "."
 				exit
 			else
 				pair.each do |item|
