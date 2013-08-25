@@ -114,7 +114,7 @@ elsif prefs[:run]
 				end
 				if pair[1].include?("@")			# '@' indicates a file, so replace the value with that file's content.
 					pair[1] = File.open("huby-meat/" + pair[1].delete("@")) {|file| file.read()}
-				elsif pair[0].end_with?("_button")
+				elsif pair[1].include?(",")
 					pair[1] = pair[1].split(",")
 					pair[1][0].strip! unless pair[1][0].nil?
 					pair[1][1].strip! unless pair[1][1].nil?
@@ -136,7 +136,8 @@ elsif prefs[:run]
 		puts "Number of bodies: #{bodies.size}"
 	end
 	bodies.each do |file| 
-		config_key = ""		# Start by resetting the string values.
+		# Start by resetting the string values.
+		config_key = ""					
 		old_value = ""
 		filename = ""
 		old_button_value = ""
@@ -145,18 +146,21 @@ elsif prefs[:run]
 		super_key = ""
 		# filename will hold the directory and name of each file to be written relative to the output root.
 		filename = file[file.index("huby-meat") + "huby-meat/bodies/".length .. file.index(".huby") - 1]
-		config_key = filename[0..filename.index(".") - 1]	# Used to look into the config hash.
+		config_key = filename[0..filename.rindex(".") - 1]	# Used to look into the config hash.
 		old_value = config[config_key]						# Store the old hash value so we can change the value.
 		# All config entries are relative to output root. So, adjust for it when not actually *in* output root.
-		config[config_key] = "#"		# Don't let pages link to themselves.
+		config[config_key] = config[config_key][1]			# Don't let pages link to themselves.
 		if config.has_key?(config_key + "_button")			# If there is a button for this page (like in a navbar), set it to active.
 			old_button_value = config[config_key + "_button"]
+			puts config[config_key + "_button"].to_s
 			if config[config_key + "_button"].size == 2		# First entry is inactive button, second is active button.
 				config[config_key + "_button"] = config[config_key + "_button"][1]		# Activate the button!
-			elsif config[config_key + "_button"].size == 1				# Tied to another button.
-				super_key = config[config_key + "_button"][0][1..-1]	# Figure out what the other button is. Doesn't follow chains!
+			elsif !config[config_key + "_button"]is_a? Array 	# Tied to another button.
+				super_key = config[config_key + "_button"][1..-1]	# Figure out what the other button is. Doesn't follow chains!
 				old_super_value = config[super_key]
 				config[super_key] = config[super_key][1].strip			# Activate the super button.
+			else
+				puts "Syntax error".red + " in config.huby near '" + config[config_key + "_button"] + "'."
 			end
 		end
 		filename = Dir.getwd + "/" + prefs[:output_folder] + "/" + filename 	# Now filename the full path of the file.
@@ -175,7 +179,7 @@ elsif prefs[:run]
 				puts key.to_s + " => " + value.to_s
 			end
 			# Adjust for folders unless you aren't actually printing a link (button, comment, files, etc).
-			value = "../" * old_value.scan("\/").size + value unless key.include?("_button") or value == "#" or value == "" or key.include?("@")
+			value = "../" * old_value[0].scan("\/").size + value unless key.include?("_button") or value == "#" or value == "" or key.include?("@")
 			body.gsub!("{{{" + key.to_s + "}}}", value.to_s)
 		}
 		FileUtils.mkdir_p(filename[0..filename.rindex("/")]) unless File.exists?(filename)	# Make sure we can write the file.
