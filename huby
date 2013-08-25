@@ -49,11 +49,11 @@ elsif prefs[:init]
 	}
 	puts "Creating huby-meat/config.huby."
 	File.open("huby-meat/config.huby", 'w') {|config|				# Will definitely need to check this file out too.
-		config.puts("output_folder => #{prefs[:output_folder]}")	# When running, will read this line to get folder.
-		config.puts("@header => @header.huby")
-		config.puts("@footer => @footer.huby")
+		config.puts("output_folder".ljust(30) + "=> #{prefs[:output_folder]}")	# When running, will read this line to get folder.
+		config.puts("@header".ljust(30) + "=> @header.huby")
+		config.puts("@footer".ljust(30) + "=> @footer.huby")
 		configs.each do |pair|
-			config.puts(pair[0] + "=>" + pair[1] + ",")			# Syntax of config.huby is `key => value,` ... `key_n => value_n`
+			config.puts(pair[0].ljust(30) + "=> " + pair[1])			# Syntax of config.huby is `key => value,` ... `key_n => value_n`
 		end
 	}
 elsif prefs[:run]
@@ -115,7 +115,6 @@ elsif prefs[:run]
 				old_super_value = config[super_key]
 				config[super_key] = config[super_key][1].strip			# Activate the super button.
 			end
-			puts
 		end
 		filename = Dir.getwd + "/" + prefs[:output_folder] + "/" + filename 	# Now filename the full path of the file.
 		if prefs[:verbose]
