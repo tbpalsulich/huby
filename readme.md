@@ -83,7 +83,7 @@ This is useful for dropdown menus.
 
 ##Using the Configuration
 Inside any `.huby` file, whenever you write `{{{key}}}`, it will be replaced by what is pointed to
-by `key` in `config.huby`. When 
+by `key` in `config.huby`.
 
 A line in `navbar.huby` could look like:
 
@@ -101,9 +101,9 @@ Depending on what file is currently being written.
 
 The most basic `*.huby` file with the header, navbar and footer is:
 
-    {{{header}}}
-    {{{navbar}}}
+    {{{@header}}}
+    {{{@navbar}}}
 
-    {{{footer}}}
+    {{{@footer}}}
 
 Put whatever makes this page unique between.
